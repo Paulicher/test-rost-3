@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Анализ прибыльности компаний РФ</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1rem;
+        }
+
+        .controls {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .sector-filter {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .sector-btn {
+            padding: 10px 20px;
+            border: 2px solid #667eea;
+            background: transparent;
+            color: #667eea;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+        }
+
+        .sector-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .sector-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .metrics-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .metric-value {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            color: #666;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .chart-title {
+            font-size: 1.4rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+        }
+
+        .companies-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .sector-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .sector-title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: #333;
+            text-align: center;
+            padding-bottom: 10px;
+            border-bottom: 3px solid #667eea;
+        }
+
+        .company-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .company-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: linear-gradient(135deg, #f8f9ff, #e8eaff);
+            border-radius: 12px;
+            transition: all 0.3s ease;
+            border-left: 4px solid #667eea;
+        }
+
+        .company-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+        }
+
+        .company-info {
+            flex: 1;
+        }
+
+        .company-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #333;
+        }
+
+        .company-metrics {
+            display: flex;
+            gap: 15px;
+        }
+
+        .metric {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .metric-value-inline {
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .profitability {
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+
+        .profitability.high {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .profitability.medium {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .profitability.low {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .companies-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .controls {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            
+            .sector-filter {
+                justify-content: center;
+            }
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 40px;
+            color: #667eea;
+            font-size: 1.2rem;
+        }
+
+        .search-box {
+            padding: 12px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 1rem;
+            min-width: 250px;
+            transition: all 0.3s ease;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 10px rgba(102, 126, 234, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Анализ прибыльности компаний РФ</h1>
+            <p>Мониторинг финансовых показателей по ключевым секторам экономики</p>
+        </div>
+
+        <div class="controls">
+            <div class="sector-filter">
+                <label style="font-weight: bold; color: #333;">Сектор:</label>
+                <button class="sector-btn active" onclick="filterSector('all')">Все секторы</button>
+                <button class="sector-btn" onclick="filterSector('metallurgy')">Металлургия</button>
+                <button class="sector-btn" onclick="filterSector('finance')">Финансы</button>
+                <button class="sector-btn" onclick="filterSector('energy')">Энергетика</button>
+                <button class="sector-btn" onclick="filterSector('it')">IT</button>
+                <button class="sector-btn" onclick="filterSector('retail')">Ритейл</button>
+                <button class="sector-btn" onclick="filterSector('telecom')">Телеком</button>
+            </div>
+            <input type="text" class="search-box" placeholder="Поиск компании..." onInput="searchCompanies(this.value)">
+        </div>
+
+        <div class="metrics-overview" id="metricsOverview">
+            <div class="metric-card">
+                <div class="metric-value" id="totalRevenue">2.8T</div>
+                <div class="metric-label">Общая выручка (₽)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="totalProfit">420B</div>
+                <div class="metric-label">Общая прибыль (₽)</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="avgProfitability">15.2%</div>
+                <div class="metric-label">Средняя рентабельность</div>
+            </div>
+            <div class="metric-card">
+                <div class="metric-value" id="companiesCount">42</div>
+                <div class="metric-label">Количество компаний</div>
+            </div>
+        </div>
+
+        <div class="dashboard-grid">
+            <div class="chart-container">
+                <div class="chart-title">Распределение выручки по секторам</div>
+                <canvas id="revenueChart"></canvas>
+            </div>
+            <div class="chart-container">
+                <div class="chart-title">Рентабельность по секторам</div>
+                <canvas id="profitabilityChart"></canvas>
+            </div>
+        </div>
+
+        <div class="companies-grid" id="companiesGrid">
+            <!-- Companies will be rendered here -->
+        </div>
+
+        <div class="loading" id="loading">
+            <div>Загрузка данных...</div>
+        </div>
+    </div>
+
+    <script>
+        // Данные компаний по секторам
+        const companiesData = {
+            metallurgy: [
+                {name: "Северсталь", revenue: 850000, profit: 127000, profitability: 14.9},
+                {name: "ММК", revenue: 720000, profit: 95000, profitability: 13.2},
+                {name: "НЛМК", revenue: 680000, profit: 85000, profitability: 12.5},
+                {name: "Мечел", revenue: 420000, profit: 35000, profitability: 8.3},
+                {name: "ТМК", revenue: 380000, profit: 28000, profitability: 7.4},
+                {name: "ВСМПО-АВИСМА", revenue: 290000, profit: 42000, profitability: 14.5},
+                {name: "Русал", revenue: 650000, profit: 78000, profitability: 12.0},
+                {name: "Полюс", revenue: 520000, profit: 156000, profitability: 30.0},
+                {name: "Кинросс Голд", revenue: 180000, profit: 32000, profitability: 17.8},
+                {name: "Полиметалл", revenue: 240000, profit: 48000, profitability: 20.0}
+            ],
+            finance: [
+                {name: "Сбербанк", revenue: 4200000, profit: 1100000, profitability: 26.2},
+                {name: "ВТБ", revenue: 1800000, profit: 280000, profitability: 15.6},
+                {name: "Газпромбанк", revenue: 1200000, profit: 180000, profitability: 15.0},
+                {name: "Альфа-Банк", revenue: 950000, profit: 120000, profitability: 12.6},
+                {name: "Россельхозбанк", revenue: 480000, profit: 45000, profitability: 9.4},
+                {name: "Тинькофф Банк", revenue: 420000, profit: 95000, profitability: 22.6},
+                {name: "Московский Кредитный Банк", revenue: 380000, profit: 38000, profitability: 10.0},
+                {name: "Райффайзенбанк", revenue: 320000, profit: 42000, profitability: 13.1},
+                {name: "Росбанк", revenue: 280000, profit: 28000, profitability: 10.0},
+                {name: "Банк Открытие", revenue: 250000, profit: 18000, profitability: 7.2}
+            ],
+            energy: [
+                {name: "Газпром", revenue: 8500000, profit: 2100000, profitability: 24.7},
+                {name: "Роснефть", revenue: 7200000, profit: 950000, profitability: 13.2},
+                {name: "ЛУКОЙЛ", revenue: 5800000, profit: 890000, profitability: 15.3},
+                {name: "Татнефть", revenue: 1200000, profit: 180000, profitability: 15.0},
+                {name: "Башнефть", revenue: 980000, profit: 125000, profitability: 12.8},
+                {name: "Новатэк", revenue: 1800000, profit: 420000, profitability: 23.3},
+                {name: "Сургутнефтегаз", revenue: 1400000, profit: 280000, profitability: 20.0},
+                {name: "РусГидро", revenue: 520000, profit: 45000, profitability: 8.7},
+                {name: "Россети", revenue: 1100000, profit: 85000, profitability: 7.7},
+                {name: "Интер РАО", revenue: 680000, profit: 95000, profitability: 14.0}
+            ],
+            it: [
+                {name: "Яндекс", revenue: 520000, profit: 85000, profitability: 16.3},
+                {name: "Mail.ru Group", revenue: 180000, profit: 28000, profitability: 15.6},
+                {name: "Kaspersky Lab", revenue: 120000, profit: 24000, profitability: 20.0},
+                {name: "1С", revenue: 85000, profit: 18000, profitability: 21.2},
+                {name: "ABBYY", revenue: 45000, profit: 12000, profitability: 26.7},
+                {name: "Luxoft", revenue: 180000, profit: 32000, profitability: 17.8},
+                {name: "DataArt", revenue: 75000, profit: 15000, profitability: 20.0},
+                {name: "IBS", revenue: 95000, profit: 12000, profitability: 12.6},
+                {name: "Softline", revenue: 420000, profit: 35000, profitability: 8.3},
+                {name: "EPAM Systems", revenue: 320000, profit: 68000, profitability: 21.3}
+            ],
+            retail: [
+                {name: "X5 Retail Group", revenue: 2100000, profit: 95000, profitability: 4.5},
+                {name: "Магнит", revenue: 1800000, profit: 78000, profitability: 4.3},
+                {name: "Лента", revenue: 680000, profit: 24000, profitability: 3.5},
+                {name: "Дикси", revenue: 520000, profit: 18000, profitability: 3.5},
+                {name: "М.Видео", revenue: 480000, profit: 28000, profitability: 5.8},
+                {name: "Детский мир", revenue: 180000, profit: 12000, profitability: 6.7},
+                {name: "Спортмастер", revenue: 220000, profit: 18000, profitability: 8.2},
+                {name: "Эльдорадо", revenue: 320000, profit: 15000, profitability: 4.7},
+                {name: "Wildberries", revenue: 850000, profit: 128000, profitability: 15.1},
+                {name: "OZON", revenue: 420000, profit: 42000, profitability: 10.0}
+            ],
+            telecom: [
+                {name: "МТС", revenue: 520000, profit: 85000, profitability: 16.3},
+                {name: "Мегафон", revenue: 380000, profit: 58000, profitability: 15.3},
+                {name: "Билайн", revenue: 320000, profit: 42000, profitability: 13.1},
+                {name: "Ростелеком", revenue: 420000, profit: 35000, profitability: 8.3},
+                {name: "Т2 Мобайл", revenue: 180000, profit: 22000, profitability: 12.2},
+                {name: "ЭР-Телеком", revenue: 95000, profit: 8000, profitability: 8.4},
+                {name: "МГТС", revenue: 68000, profit: 7500, profitability: 11.0},
+                {name: "Ufanet", revenue: 24000, profit: 3200, profitability: 13.3},
+                {name: "Дом.ru", revenue: 85000, profit: 9500, profitability: 11.2},
+                {name: "NetByNet", revenue: 18000, profit: 2800, profitability: 15.6}
+            ]
+        };
+
+        let currentSector = 'all';
+        let searchQuery = '';
+
+        // Инициализация графиков
+        let revenueChart, profitabilityChart;
+
+        function initCharts() {
+            const ctx1 = document.getElementById('revenueChart').getContext('2d');
+            const ctx2 = document.getElementById('profitabilityChart').getContext('2d');
+
+            const sectorData = getSectorTotals();
+
+            revenueChart = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(sectorData),
+                    datasets: [{
+                        data: Object.values(sectorData).map(s => s.revenue / 1000000),
+                        backgroundColor: [
+                            '#667eea', '#764ba2', '#f093fb', '#f5576c',
+                            '#4facfe', '#00f2fe', '#43e97b', '#38f9d7'
+                        ],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: {
+                                padding: 20,
+                                font: {
+                                    size: 12
+                                }
+                            }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(context) {
+                                    return context.label + ': ' + context.parsed.toFixed(1) + 'T ₽';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            profitabilityChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(sectorData),
+                    datasets: [{
+                        label: 'Средняя рентабельность (%)',
+                        data: Object.values(sectorData).map(s => s.avgProfitability),
+                        backgroundColor: 'rgba(102, 126, 234, 0.8)',
+                        borderColor: '#667eea',
+                        borderWidth: 2,
+                        borderRadius: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            display: false
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        function getSectorTotals() {
+            const sectors = {
+                'Металлургия': {revenue: 0, profit: 0, count: 0},
+                'Финансы': {revenue: 0, profit: 0, count: 0},
+                'Энергетика': {revenue: 0, profit: 0, count: 0},
+                'IT': {revenue: 0, profit: 0, count: 0},
+                'Ритейл': {revenue: 0, profit: 0, count: 0},
+                'Телеком': {revenue: 0, profit: 0, count: 0}
+            };
+
+            const sectorNames = {
+                'metallurgy': 'Металлургия',
+                'finance': 'Финансы',
+                'energy': 'Энергетика',
+                'it': 'IT',
+                'retail': 'Ритейл',
+                'telecom': 'Телеком'
+            };
+
+            Object.keys(companiesData).forEach(sectorKey => {
+                const sectorName = sectorNames[sectorKey];
+                companiesData[sectorKey].forEach(company => {
+                    sectors[sectorName].revenue += company.revenue;
+                    sectors[sectorName].profit += company.profit;
+                    sectors[sectorName].count++;
+                });
+                sectors[sectorName].avgProfitability = 
+                    sectors[sectorName].profit / sectors[sectorName].revenue * 100;
+            });
+
+            return sectors;
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) {
+                return (num / 1000000).toFixed(1) + 'M';
+            } else if (num >= 1000) {
+                return (num / 1000).toFixed(1) + 'K';
+            }
+            return num.toString();
+        }
+
+        function getProfitabilityClass(profitability) {
+            if (profitability >= 15) return 'high';
+            if (profitability >= 8) return 'medium';
+            return 'low';
+        }
+
+        function renderCompanies() {
+            const grid = document.getElementById('companiesGrid');
+            grid.innerHTML = '';
+
+            const sectorNames = {
+                'metallurgy': 'Металлургия',
+                'finance': 'Финансы',
+                'energy': 'Энергетика',
+                'it': 'IT',
+                'retail': 'Ритейл',
+                'telecom': 'Телеком'
+            };
+
+            const sectorsToShow = currentSector === 'all' ? 
+                Object.keys(companiesData) : [currentSector];
+
+            sectorsToShow.forEach(sectorKey => {
+                const sectorPanel = document.createElement('div');
+                sectorPanel.className = 'sector-panel';
+                
+                const companies = companiesData[sectorKey]
+                    .filter(company => 
+                        company.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .sort((a, b) => b.revenue - a.revenue)
+                    .slice(0, 10);
+
+                if (companies.length === 0) return;
+
+                sectorPanel.innerHTML = `
+                    <div class="sector-title">${sectorNames[sectorKey]}</div>
+                    <div class="company-list">
+                        ${companies.map(company => `
+                            <div class="company-item">
+                                <div class="company-info">
+                                    <div class="company-name">${company.name}</div>
+                                    <div class="company-metrics">
+                                        <div class="metric">
+                                            Выручка: <span class="metric-value-inline">${formatNumber(company.revenue)} ₽</span>
+                                        </div>
+                                        <div class="metric">
+                                            Прибыль: <span class="metric-value-inline">${formatNumber(company.profit)} ₽</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="profitability ${getProfitabilityClass(company.profitability)}">
+                                    ${company.profitability.toFixed(1)}%
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                grid.appendChild(sectorPanel);
+            });
+        }
+
+        function updateMetrics() {
+            const companies = currentSector === 'all' ? 
+                Object.values(companiesData).flat() :
+                companiesData[currentSector];
+
+            const filteredCompanies = companies.filter(company => 
+                company.name.toLowerCase().includes(searchQuery.toLowerCase())
+            );
+
+            const totalRevenue = filteredCompanies.reduce((sum, c) => sum + c.revenue, 0);
+            const totalProfit = filteredCompanies.reduce((sum, c) => sum + c.profit, 0);
+            const avgProfitability = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+
+            document.getElementById('totalRevenue').textContent = formatNumber(totalRevenue) + ' ₽';
+            document.getElementById('totalProfit').textContent = formatNumber(totalProfit) + ' ₽';
+            document.getElementById('avgProfitability').textContent = avgProfitability.toFixed(1) + '%';
+            document.getElementById('companiesCount').textContent = filteredCompanies.length;
+        }
+
+        function filterSector(sector) {
+            // Update active button
+            document.querySelectorAll('.sector-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            currentSector = sector;
+            renderCompanies();
+            updateMetrics();
+        }
+
+        function searchCompanies(query) {
+            searchQuery = query;
+            renderCompanies();
+            updateMetrics();
+        }
+
+        // Инициализация
+        document.addEventListener('DOMContentLoaded', function() {
+            initCharts();
+            renderCompanies();
+            updateMetrics();
+        });
+    </script>
+</body>
+</html>
